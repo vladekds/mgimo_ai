@@ -413,10 +413,55 @@ def cmd_source_add(a):
     print(sid)
 
 
+def cmd_source_set(a):
+    """Переоценка источника. При понижении надёжности зависимые факты уходят на пересмотр."""
+    p = pdir() / "sources.jsonl"
+    rows = read_jsonl(p)
+    sid = a.id.upper()
+    src = next((r for r in rows if r["id"] == sid), None) or die(f"нет источника {sid}")
+    old = src.get("reliability")
+    changes = {}
+    if a.reliability:
+        changes["reliability"] = a.reliability
+    for key in ["title", "url", "snapshot", "published", "note"]:
+        v = getattr(a, key)
+        if v is not None:
+            changes[key] = v
+    src.update(changes)
+    src.setdefault("revisions", []).append({"at": now(), "changes": changes, "old_reliability": old, "reason": a.reason})
+    write_jsonl(p, rows)
+    history({"event": "source_set", "id": sid, "changes": changes, "reason": a.reason})
+    msg = f"{sid} обновлён: {', '.join(changes) or 'нет изменений'}"
+    downgraded = a.reliability and old and a.reliability > old  # A < B < … < E
+    if downgraded:
+        claims = load_claims()
+        decisions = read_jsonl(pdir() / "decisions.jsonl")
+        order, decs = impacted([sid], claims, decisions)
+        affected = set(order)
+        marked = []
+        for c in claims:
+            if c["id"] in affected and c["status"] in ("active", "confirmed"):
+                c["status"] = "needs_review"
+                c["updated_at"] = now()
+                c.setdefault("revisions", []).append({"at": now(), "status": "needs_review",
+                                                      "reason": f"надёжность {sid} понижена {old}→{a.reliability}: {a.reason}"})
+                marked.append(c["id"])
+        save_claims(claims)
+        for d in decisions:
+            if d["id"] in decs and d.get("status") == "active":
+                d["status"] = "needs_review"
+                d.setdefault("revisions", []).append({"at": now(), "reason": f"надёжность {sid} понижена"})
+        write_jsonl(pdir() / "decisions.jsonl", decisions)
+        msg += f". Надёжность {old}→{a.reliability}; на пересмотр: {', '.join(marked + decs) or '—'}"
+    journal(f"Источник {msg} ({a.reason})")
+    print(msg)
+
+
 def cmd_source_list(a):
     for r in read_jsonl(pdir() / "sources.jsonl"):
         loc = r.get("url") or r.get("path") or ""
-        print(f"{r['id']} [{r['reliability']}] {r['kind']:8} {r['title']} — {loc}")
+        rev = " (переоценён)" if r.get("revisions") else ""
+        print(f"{r['id']} [{r['reliability']}]{rev} {r['kind']:8} {r['title']} — {loc}")
 
 
 # ---------------------------------------------------------------- утверждения
@@ -833,6 +878,10 @@ def main(argv=None):
     p.add_argument("--reliability", default="C", choices=list(RELIABILITY))
     p.add_argument("--published"); p.add_argument("--note"); p.set_defaults(f=cmd_source_add)
     p = s.add_parser("list"); p.set_defaults(f=cmd_source_list)
+    p = s.add_parser("set", help="переоценить/исправить источник"); p.add_argument("id")
+    p.add_argument("--reliability", choices=list(RELIABILITY)); p.add_argument("--title"); p.add_argument("--url")
+    p.add_argument("--snapshot"); p.add_argument("--published"); p.add_argument("--note")
+    p.add_argument("--reason", required=True); p.set_defaults(f=cmd_source_set)
 
     c = sub.add_parser("claim", help="реестр утверждений").add_subparsers(dest="cc", required=True)
     p = c.add_parser("add"); p.add_argument("--type", required=True, choices=list(CLAIM_TYPES))
