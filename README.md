@@ -83,7 +83,8 @@ projects/<slug>/          материалы и состояние конкре�
 ./strateg decision due    # что пора пересмотреть
 ./strateg check           # линтер доказательности
 ./strateg cost            # стоимость
-./strateg report          # итоговый отчёт
+./strateg report          # итоговый отчёт (Markdown)
+./strateg html            # HTML-отчёт: кликабельные ссылки на факты и источники
 ```
 
 ## Данные и ограничения

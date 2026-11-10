@@ -4,10 +4,12 @@
 #   ./strateg ingest <файл>     — документ → текст
 #   ./strateg profile <таблица> — профиль CSV/XLSX
 #   ./strateg py <скрипт.py>    — запустить свой Python-скрипт (сам найдёт python/python3/py)
+#   ./strateg html              — HTML-отчёт для руководителя (outputs/REPORT.html)
 DIR="$(cd "$(dirname "$0")" && pwd)"
 case "$1" in
   ingest)  shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/ingest.py" "$@" ;;
   py)      shift; exec bash "$DIR/.claude/hooks/py.sh" "$@" ;;
+  html)    shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/render_html.py" "$@" ;;
   profile) shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/profile_table.py" "$@" ;;
   *)       exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/strateg.py" "$@" ;;
 esac
