@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# Node
+node_modules/
+dist/
+build/
+# Секреты — НИКОГДА не коммитим
+.env
+.env.*
+!.env.example
+# Obsidian служебное
+.obsidian/workspace*.json
+.obsidian/cache
+# Системное
+.DS_Store
+Thumbs.db
