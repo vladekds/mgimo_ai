@@ -2,7 +2,15 @@
   "mcpServers": {
     "playwright": {
       "command": "node",
-      "args": [".claude/mcp/playwright.mjs"]
+      "args": [
+        ".claude/mcp/playwright.mjs"
+      ]
+    },
+    "strateg": {
+      "command": "node",
+      "args": [
+        ".claude/mcp/strateg.mjs"
+      ]
     }
   }
 }

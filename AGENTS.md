@@ -22,7 +22,8 @@
 Не редактируй `state.json` и `*.jsonl` руками: хук это заблокирует. Справка: `./strateg -h`, `./strateg <команда> -h`.
 
 **Окружение.** `./strateg` сам находит Python (на Windows `python3` часто ведёт на заглушку Microsoft Store).
-Свои Python-скрипты запускай так же: `./strateg py work/analysis.py`. Источник переоценить: `./strateg source set S-xxx --reliability D --reason "…"`. Документы: `./strateg ingest <файл>`,
+Свои Python-скрипты запускай так же: `./strateg py work/analysis.py`. Поиск по реестру, источникам и решениям (словоформы + связи): `./strateg search <слова или id>` — используй его, прежде чем
+искать заново в интернете: возможно, это уже известно. Источник переоценить: `./strateg source set S-xxx --reliability D --reason "…"`. Документы: `./strateg ingest <файл>`,
 таблицы: `./strateg profile <файл>`. Если `./strateg` не запускается — сообщи пользователю текст ошибки
 и не обходи CLI ручной правкой файлов.
 

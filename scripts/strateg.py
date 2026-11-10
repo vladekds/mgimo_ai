@@ -289,6 +289,10 @@ def cmd_status(a):
         print("Открытые вопросы к человеку:")
         for oq in st["open_questions"]:
             print(f"  - {oq}")
+    if st.get("human_decisions"):
+        print("Ответы человека на развилках (учитывай, не переспрашивай):")
+        for h in st["human_decisions"][-6:]:
+            print(f"  - {h['question']} → {h['answer']}")
     print(f"Следующий шаг: {st.get('next_action') or '—'}")
     if st.get("checkpoints"):
         last = st["checkpoints"][-1]
@@ -842,6 +846,59 @@ def cmd_report(a):
     print(f"Отчёт: {target.relative_to(ROOT)}")
 
 
+# ---------------------------------------------------------------- поиск
+WORD_RE = re.compile(r"[a-zа-яё0-9]+", re.I)
+
+
+def stems(text: str) -> list[str]:
+    """Грубый стемминг: первые 5 символов слова — покрывает русские окончания (подписка/подписки/подписок)."""
+    return [w[:5] for w in WORD_RE.findall(text.lower().replace("ё", "е")) if len(w) > 2]
+
+
+def search_items(query: str, slug: str | None = None, limit: int = 15) -> list[dict]:
+    """Поиск по формулировке (стемминг) + по связям (найденные утверждения тянут свои источники и зависимые)."""
+    d = pdir(slug)
+    items = []
+    for c in read_jsonl(d / "claims.jsonl"):
+        items.append({"id": c["id"], "kind": TYPE_RU[c["type"]], "status": c["status"],
+                      "text": c["text"], "extra": (c.get("evidence") or "") + " " + (c.get("note") or ""),
+                      "links": c["sources"] + c["depends_on"]})
+    for s_ in read_jsonl(d / "sources.jsonl"):
+        items.append({"id": s_["id"], "kind": f"источник {s_['reliability']}", "status": "",
+                      "text": s_["title"], "extra": (s_.get("note") or "") + " " + (s_.get("url") or s_.get("path") or ""),
+                      "links": []})
+    for x in read_jsonl(d / "decisions.jsonl"):
+        items.append({"id": x["id"], "kind": "решение", "status": x["status"], "text": f"{x['title']}: {x['chosen_option']}",
+                      "extra": " ".join(x.get("metrics", []) + x.get("review_if", [])), "links": x["based_on"]})
+    q = set(stems(query))
+    direct = [w for w in ID_RE.findall(query.upper())]
+    scored = []
+    for it in items:
+        words = stems(it["text"]) + stems(it["extra"])
+        score = sum(2 if w in stems(it["text"]) else 1 for w in q if w in words)
+        if f"{it['id']}" in {f"{a}-{b}" for a, b in direct}:
+            score += 10
+        if score:
+            scored.append((score, it))
+    scored.sort(key=lambda x: -x[0])
+    hits = [it for _, it in scored[:limit]]
+    hit_ids = {h["id"] for h in hits}
+    dmap = dependents_map(read_jsonl(d / "claims.jsonl"))
+    for h in hits:
+        h["related"] = sorted((set(h["links"]) | dmap.get(h["id"], set())) - hit_ids)[:8]
+    return hits
+
+
+def cmd_search(a):
+    hits = search_items(" ".join(a.query), limit=a.limit)
+    if not hits:
+        print("Ничего не найдено")
+    for h in hits:
+        st = f" [{h['status']}]" if h["status"] not in ("", "active") else ""
+        rel = f"  ↔ связано: {', '.join(h['related'])}" if h.get("related") else ""
+        print(f"{h['id']} ({h['kind']}){st} {h['text']}{rel}")
+
+
 # ---------------------------------------------------------------- argparse
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="strateg", description="CLI агента «Стратег»")
@@ -920,6 +977,8 @@ def main(argv=None):
     p.set_defaults(f=cmd_check)
     p = sub.add_parser("cost", help="стоимость и токены"); p.set_defaults(f=cmd_cost)
     p = sub.add_parser("report", help="собрать итоговый отчёт"); p.set_defaults(f=cmd_report)
+    p = sub.add_parser("search", help="поиск по реестру, источникам и решениям (с учётом связей)")
+    p.add_argument("query", nargs="+"); p.add_argument("--limit", type=int, default=15); p.set_defaults(f=cmd_search)
 
     a = ap.parse_args(argv)
     a.f(a)

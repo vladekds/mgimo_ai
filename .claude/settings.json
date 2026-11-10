@@ -24,7 +24,8 @@
       "mcp__playwright__browser_find",
       "mcp__playwright__browser_scroll",
       "mcp__playwright__browser_hover",
-      "mcp__playwright__browser_click"
+      "mcp__playwright__browser_click",
+      "mcp__strateg"
     ],
     "deny": [
       "Read(./.env)",
@@ -96,6 +97,7 @@
     ]
   },
   "enabledMcpjsonServers": [
-    "playwright"
+    "playwright",
+    "strateg"
   ]
 }

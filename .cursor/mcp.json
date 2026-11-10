@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "strateg": { "command": "node", "args": ["${workspaceFolder}/.claude/mcp/strateg.mjs"] },
+    "playwright": { "command": "node", "args": ["${workspaceFolder}/.claude/mcp/playwright.mjs"] }
+  }
+}
