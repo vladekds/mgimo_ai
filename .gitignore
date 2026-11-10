@@ -17,3 +17,8 @@ build/
 # Системное
 .DS_Store
 Thumbs.db
+
+# Проекты: служебные и временные файлы
+projects/.active
+projects/_unassigned_cost/
+*.tmp

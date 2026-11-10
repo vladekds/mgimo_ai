@@ -1,0 +1,6 @@
+# Необязательные зависимости: ядро агента работает на стандартной библиотеке Python 3.9+.
+# Установка: pip install -r requirements.txt
+markitdown[all]>=0.1   # лучшая конвертация PDF/DOCX/PPTX/XLSX/HTML в текст
+pypdf>=4               # PDF, если markitdown не установлен
+openpyxl>=3.1          # XLSX
+pandas>=2              # анализ данных субагентом data-analyst
