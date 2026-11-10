@@ -20,3 +20,4 @@
 | `methods/ux-heuristics.md` | разбор интерфейсов |
 | `methods/digital-products-metrics.md` | справочник метрик цифровых и телеком-продуктов |
 | `templates/*.md` | шаблоны результатов 01–07 |
+| `external/anthropic/` | сторонние методички (Apache-2.0, см. NOTICE.md): синтез исследований, конкурентный анализ, QA анализа, статистика |
