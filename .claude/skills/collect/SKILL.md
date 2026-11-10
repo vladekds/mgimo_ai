@@ -9,8 +9,8 @@ description: Этап 2 — сбор материалов. Регистриру�
 
 ## Шаги
 1. **Материалы пользователя** из `inputs/`: для каждого файла
-   - PDF/DOCX/PPTX/XLSX/HTML → `python3 scripts/tools/ingest.py <файл>` (текст появится в `sources/`);
-   - CSV/XLSX с данными → профилирование `python3 scripts/tools/profile_table.py <файл>` (листы, столбцы, периоды, пропуски);
+   - PDF/DOCX/PPTX/XLSX/HTML → `./strateg ingest <файл>` (текст появится в `sources/`);
+   - CSV/XLSX с данными → профилирование `./strateg profile <файл>` (листы, столбцы, периоды, пропуски);
    - изображения/скриншоты → читай напрямую (инструмент Read) или передай `ux-analyst`.
    Регистрируй: `strateg source add --kind doc|table|data|image|user --path <путь> --title … --reliability A` (собственные материалы — A, если не сказано иное).
 2. **Открытые источники**: по вопросам из брифа составь 5–10 поисковых направлений (рынок, конкуренты, аудитория,

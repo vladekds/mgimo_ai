@@ -72,14 +72,14 @@ projects/<slug>/          материалы и состояние конкре�
 
 ## CLI
 ```bash
-python3 scripts/strateg.py status          # где мы и что дальше
-python3 scripts/strateg.py claim list      # реестр утверждений
-python3 scripts/strateg.py impact F-004    # что зависит от утверждения
-python3 scripts/strateg.py revise F-004 --status retracted --reason "новые данные"
-python3 scripts/strateg.py decision due    # что пора пересмотреть
-python3 scripts/strateg.py check           # линтер доказательности
-python3 scripts/strateg.py cost            # стоимость
-python3 scripts/strateg.py report          # итоговый отчёт
+./strateg status          # где мы и что дальше
+./strateg claim list      # реестр утверждений
+./strateg impact F-004    # что зависит от утверждения
+./strateg revise F-004 --status retracted --reason "новые данные"
+./strateg decision due    # что пора пересмотреть
+./strateg check           # линтер доказательности
+./strateg cost            # стоимость
+./strateg report          # итоговый отчёт
 ```
 
 ## Данные и ограничения

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Единая точка входа агента: ./strateg <команда>  (Windows Git Bash, macOS, Linux)
+#   ./strateg status | claim add ... | source add ... | check | cost | report ...
+#   ./strateg ingest <файл>     — документ → текст
+#   ./strateg profile <таблица> — профиль CSV/XLSX
+#   ./strateg py <скрипт.py>    — запустить свой Python-скрипт (сам найдёт python/python3/py)
+DIR="$(cd "$(dirname "$0")" && pwd)"
+case "$1" in
+  ingest)  shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/ingest.py" "$@" ;;
+  py)      shift; exec bash "$DIR/.claude/hooks/py.sh" "$@" ;;
+  profile) shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/profile_table.py" "$@" ;;
+  *)       exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/strateg.py" "$@" ;;
+esac

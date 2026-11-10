@@ -2,15 +2,17 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(python3 scripts/strateg.py:*)",
-      "Bash(python scripts/strateg.py:*)",
-      "Bash(python3 scripts/tools/*:*)",
-      "Bash(python scripts/tools/*:*)",
+      "Bash(./strateg:*)",
+      "Bash(./strateg *)",
+      "Bash(bash strateg:*)",
       "WebSearch",
       "WebFetch",
       "Read(./**)",
-      "Edit(./projects/**)",
-      "Write(./projects/**)"
+      "Edit(./projects/**/outputs/**)",
+      "Write(./projects/**/outputs/**)",
+      "Write(./projects/**/sources/**)",
+      "Write(./projects/**/work/**)",
+      "Write(./projects/**/interviews/**)"
     ],
     "deny": [
       "Read(./.env)",
@@ -19,21 +21,61 @@
   },
   "hooks": {
     "SessionStart": [
-      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py\"", "timeout": 30}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/session_start.py\"",
+            "timeout": 30
+          }
+        ]
+      }
     ],
     "PreToolUse": [
-      {"matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
-       "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\"", "timeout": 15}]}
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.py\"",
+            "timeout": 15
+          }
+        ]
+      }
     ],
     "PostToolUse": [
-      {"matcher": "*",
-       "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/activity_log.py\"", "timeout": 15}]}
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/activity_log.py\"",
+            "timeout": 15
+          }
+        ]
+      }
     ],
     "Stop": [
-      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cost_tracker.py\"", "timeout": 30}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/cost_tracker.py\"",
+            "timeout": 30
+          }
+        ]
+      }
     ],
     "SubagentStop": [
-      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/cost_tracker.py\"", "timeout": 30}]}
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/cost_tracker.py\"",
+            "timeout": 30
+          }
+        ]
+      }
     ]
   }
 }

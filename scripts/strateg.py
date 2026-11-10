@@ -224,7 +224,10 @@ def cmd_list(a):
     if not PROJECTS.exists():
         print("Проектов нет")
         return
-    for d in sorted(p for p in PROJECTS.iterdir() if p.is_dir()):
+    dirs = sorted(p for p in PROJECTS.iterdir() if p.is_dir() and (p / "state.json").exists())
+    if not dirs:
+        print("Проектов нет")
+    for d in dirs:
         st = read_json(d / "state.json")
         if not st:
             continue

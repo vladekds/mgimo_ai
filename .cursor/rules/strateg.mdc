@@ -5,4 +5,4 @@ alwaysApply: true
 Следуй инструкциям из файла AGENTS.md в корне репозитория (@AGENTS.md).
 Процедуры этапов описаны в .claude/skills/<этап>/SKILL.md — открывай нужный файл перед выполнением этапа.
 Роли помощников описаны в .claude/agents/*.md — в Cursor выполняй их сам, соблюдая указанные там правила.
-В Cursor нет хуков: после каждого этапа сам запускай `python3 scripts/strateg.py status` и `checkpoint`.
+В Cursor нет хуков: после каждого этапа сам запускай `./strateg status` и `checkpoint`.

@@ -22,3 +22,4 @@ Thumbs.db
 projects/.active
 projects/_unassigned_cost/
 *.tmp
+.claude/hooks/.python
