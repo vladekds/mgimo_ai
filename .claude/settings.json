@@ -12,11 +12,28 @@
       "Write(./projects/**/outputs/**)",
       "Write(./projects/**/sources/**)",
       "Write(./projects/**/work/**)",
-      "Write(./projects/**/interviews/**)"
+      "Write(./projects/**/interviews/**)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_navigate_back",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_tabs",
+      "mcp__playwright__browser_close",
+      "mcp__playwright__browser_find",
+      "mcp__playwright__browser_scroll",
+      "mcp__playwright__browser_hover",
+      "mcp__playwright__browser_click"
     ],
     "deny": [
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.*)",
+      "mcp__playwright__browser_run_code_unsafe",
+      "mcp__playwright__browser_evaluate",
+      "mcp__playwright__browser_file_upload",
+      "mcp__playwright__browser_fill_form",
+      "mcp__playwright__browser_type"
     ]
   },
   "hooks": {
@@ -77,5 +94,8 @@
         ]
       }
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright"
+  ]
 }
