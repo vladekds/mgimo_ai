@@ -261,7 +261,7 @@ def progress_bar(st: dict) -> str:
 def cost_totals(slug: str | None = None) -> dict:
     tot = {"usd": 0.0, "input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "sessions": 0,
            "by_model": {}, "turns": 0, "by_stage": {}, "seconds": 0.0}
-    for f in sorted((pdir(slug) / "cost").glob("*.json")):
+    for f in sorted((pdir(slug) / "cost").glob("[!.]*.json")):
         c = read_json(f, {})
         if "by_model" not in c:
             continue

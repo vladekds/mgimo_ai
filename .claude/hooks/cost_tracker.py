@@ -73,23 +73,46 @@ def parse(files):
     return by_model, first, last
 
 
-data = read_input()
-tp = data.get("transcript_path")
-sid = data.get("session_id") or "unknown"
-if tp:
+def session_files(tp, extra=None):
     main = Path(tp)
     files = [main]
     sub = main.with_suffix("") / "subagents"
     if sub.is_dir():
         files += sorted(sub.glob("*.jsonl"))
-    if data.get("agent_transcript_path"):
-        files.append(Path(data["agent_transcript_path"]))
-    files = list(dict.fromkeys(files))
-    by_model, first, last = parse(files)
+    if extra:
+        files.append(Path(extra))
+    return list(dict.fromkeys(files))
+
+
+def write_baseline(pd, sid, tp):
+    """Запоминает, сколько сессия уже стоила к моменту начала работы над проектом (вызывается из activity_log)."""
+    base = pd / "cost" / f".base-{sid}.json"
+    if base.exists() or not tp:
+        return
+    by_model, _, _ = parse(session_files(tp))
+    base.parent.mkdir(parents=True, exist_ok=True)
+    base.write_text(json.dumps(by_model, ensure_ascii=False), encoding="utf-8")
+
+
+def main():
+    data = read_input()
+    tp = data.get("transcript_path")
+    sid = data.get("session_id") or "unknown"
+    if not tp:
+        return
+    by_model, first, last = parse(session_files(tp, data.get("agent_transcript_path")))
     pd = active_project_dir()
     target_dir = (pd / "cost") if pd else (PROJECTS / "_unassigned_cost")
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
+        base_file = target_dir / f".base-{sid}.json"
+        if base_file.exists():  # вычитаем расходы сессии, сделанные до начала работы над этим проектом
+            base = json.loads(base_file.read_text(encoding="utf-8"))
+            for model, b in base.items():
+                if model in by_model:
+                    for k in ("usd", "input", "output", "cache_read", "cache_write", "calls"):
+                        by_model[model][k] = max(0, by_model[model][k] - b.get(k, 0))
+            by_model = {m: v for m, v in by_model.items() if v["calls"] or v["usd"]}
         total = round(sum(m["usd"] for m in by_model.values()), 6)
         prev = {}
         try:
@@ -106,9 +129,14 @@ if tp:
         delta = total - sum(by_stage.values())
         if delta > 0:  # прирост с прошлого ответа относим к текущему этапу
             by_stage[stage] = round(by_stage.get(stage, 0.0) + delta, 6)
-        out = {"session_id": sid, "by_stage": by_stage, "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
-               "first_at": first, "last_at": last, "by_model": by_model,
-               "usd": round(sum(m["usd"] for m in by_model.values()), 4)}
+        out = {"session_id": sid, "by_stage": by_stage,
+               "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+               "first_at": prev.get("first_at") or (first if not base_file.exists() else dt.datetime.now(dt.timezone.utc).isoformat()),
+               "last_at": last, "by_model": by_model, "usd": round(total, 4)}
         (target_dir / f"{sid}.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
+
+
+if __name__ == "__main__":
+    main()

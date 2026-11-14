@@ -242,6 +242,24 @@ class TestHooks(Base):
         self.assertIn("$3.00", self.out("cost"))
 
 
+    def test_cost_excludes_session_spend_before_project(self):
+        """Если проект создан посреди длинного чата, прежние расходы сессии в проект не попадают."""
+        d = self.project()
+        t = self.tmp / "t2.jsonl"
+
+        def line(mid, out):
+            return json.dumps({"type": "assistant", "timestamp": "2026-11-10T10:00:00Z", "requestId": mid, "message": {
+                "id": mid, "model": "claude-haiku-5-5", "usage": {"input_tokens": 0, "output_tokens": out}}})
+        t.write_text(line("old", 2_000_000) + "\n", encoding="utf-8")  # $1.00 потрачено до проекта
+        self.hook("activity_log.py", {"tool_name": "Read", "tool_input": {}, "tool_response": "ок", "session_id": "s9",
+                                      "transcript_path": str(t)})
+        with t.open("a", encoding="utf-8") as f:
+            f.write(line("new", 1_000_000) + "\n")                      # $0.50 — уже работа над проектом
+        self.hook("cost_tracker.py", {"transcript_path": str(t), "session_id": "s9"})
+        c = json.loads((d / "cost" / "s9.json").read_text(encoding="utf-8"))
+        self.assertAlmostEqual(c["usd"], 0.5, places=2)
+
+
 class TestMcpAndTools(Base):
     def test_mcp_server_roundtrip(self):
         self.seed()

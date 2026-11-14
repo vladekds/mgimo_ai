@@ -37,6 +37,13 @@ if pd is not None:
     except Exception:
         pass
 
+if pd is not None and data.get("session_id") and data.get("transcript_path"):
+    try:  # первый раз видим этот проект в этой сессии — фиксируем, сколько сессия стоила ДО него
+        from cost_tracker import write_baseline
+        write_baseline(pd, data["session_id"], data["transcript_path"])
+    except Exception:
+        pass
+
 notes = []
 if tool in ("WebFetch", "WebSearch", "Read") or tool.startswith("mcp__"):
     m = INJECTION.search(resp_text or "")
@@ -53,7 +60,7 @@ if pd is not None:
         budget = st.get("budget_usd")
         if budget:
             spent = 0.0
-            for f in (pd / "cost").glob("*.json"):
+            for f in (pd / "cost").glob("[!.]*.json"):
                 spent += sum(m.get("usd", 0) for m in json.loads(f.read_text(encoding="utf-8")).get("by_model", {}).values())
             for level in (100, 80):
                 flag = pd / "cost" / f".warned{level}"
