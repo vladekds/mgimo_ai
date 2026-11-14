@@ -556,6 +556,7 @@ def cmd_claim_add(a):
     save_claims(rows)
     history({"event": "claim_added", "id": cid, "type": a.type})
     print(cid)
+    print(f"  ↳ {cid} · {TYPE_RU[a.type]} · {a.text[:70]}" + (f" · основания: {', '.join(dep)}" if dep else ""), file=sys.stderr)
 
 
 def cmd_claim_list(a):
@@ -676,6 +677,12 @@ def cmd_claim_set(a):
         changes["text"] = a.text
     if a.add_source:
         changes["sources"] = sorted(set(c["sources"]) | set(split_ids(a.add_source)))
+    if a.depends is not None:
+        dep = split_ids(a.depends)
+        bad = [d for d in dep if d not in byid or d == c["id"]]
+        if bad:
+            die(f"нет таких утверждений (или ссылка на себя): {', '.join(bad)}")
+        changes["depends_on"] = dep
     c.update(changes)
     c["updated_at"] = now()
     c.setdefault("revisions", []).append({"at": now(), "changes": list(changes), "reason": a.reason})
@@ -771,7 +778,8 @@ def cmd_check(a):
         for s in c["sources"]:
             if s not in sources:
                 errors.append(f"{c['id']}: ссылка на несуществующий источник {s}")
-            elif sources[s]["reliability"] in ("D", "E") and c["type"] == "fact" and c["confidence"] == "high":
+            elif (sources[s]["reliability"] in ("D", "E") and c["type"] == "fact" and c["confidence"] == "high"
+                  and all(sources.get(x, {}).get("reliability") in ("D", "E") for x in c["sources"])):
                 warns.append(f"{c['id']}: высокая уверенность при слабом источнике {s} ({sources[s]['reliability']})")
         for d in c["depends_on"]:
             dep = byid.get(d)
@@ -1003,7 +1011,9 @@ def main(argv=None):
     p.set_defaults(f=cmd_claim_list)
     p = c.add_parser("set"); p.add_argument("id"); p.add_argument("--status", choices=CLAIM_STATUSES)
     p.add_argument("--confidence", choices=["high", "medium", "low"]); p.add_argument("--text")
-    p.add_argument("--add-source", action="append"); p.add_argument("--reason", required=True)
+    p.add_argument("--add-source", action="append")
+    p.add_argument("--depends", action="append", help="заменить список оснований целиком")
+    p.add_argument("--reason", required=True)
     p.set_defaults(f=cmd_claim_set)
 
     p = sub.add_parser("impact", help="что зависит от утверждения/источника"); p.add_argument("ids", nargs="+")

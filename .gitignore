@@ -25,3 +25,6 @@ projects/_unassigned_cost/
 .claude/hooks/.python
 .playwright-mcp/
 projects/_screenshots/
+
+# Служебные файлы учёта стоимости
+projects/*/cost/.*

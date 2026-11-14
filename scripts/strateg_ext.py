@@ -119,6 +119,8 @@ def cmd_plan_list(a):
         print(f"{icons[r['status']]} {r['id']} {r['question']}")
         if r.get("why"):
             print(f"     зачем: {r['why']}")
+        if r["status"] == "in_progress":
+            print(f"     начат: {r.get('started_at')}, попыток: {r['attempts']}")
         if r.get("result"):
             print(f"     итог: {r['result']} [{', '.join(r['claims'])}]")
 
@@ -145,9 +147,15 @@ def source_text(src: dict) -> str | None:
     for p in cands:
         if p.exists() and p.is_file() and p.suffix.lower() in (".md", ".txt", ".csv", ".tsv", ".json", ".html", ".htm", ".py", ".yml"):
             try:
-                return p.read_text(encoding="utf-8", errors="ignore")
+                text = p.read_text(encoding="utf-8", errors="ignore")
             except OSError:
                 continue
+            if p.suffix.lower() == ".py":  # расчётный источник: к коду добавляем сохранённый вывод скрипта
+                for out in (p.with_suffix(".out.txt"), p.with_name(p.stem + ".out.txt")):
+                    if out.exists():
+                        text += "\n" + out.read_text(encoding="utf-8", errors="ignore")
+                        break
+            return text
     return None
 
 
@@ -176,7 +184,8 @@ def cmd_verify(a):
     for c in claims:
         if c["type"] != "fact" or c["status"] in ("retracted", "superseded"):
             continue
-        ev = (c.get("evidence") or "").strip().strip("«»\"'")
+        ev = re.sub(r"^\s*(вывод( скрипта)?|расч[её]т)\s*:\s*", "", (c.get("evidence") or "").strip(), flags=re.I).strip("«»\"'")
+        computed = any(sources.get(sid, {}).get("kind") == "data" for sid in c["sources"])
         src_texts = []
         for sid in c["sources"]:
             if sid in sources:
@@ -194,18 +203,26 @@ def cmd_verify(a):
         else:
             order = {"ok": 0, "close": 1, "missing": 2, "no_quote": 3}
             res["status"] = min((check_quote(ev, t) for t in src_texts), key=lambda x: order[x])
+            if res["status"] == "missing" and computed:
+                res["status"] = "computed"  # расчётный факт: текст вывода пересказан, сверяем только числа
         if src_texts:
             joined = norm(" ".join(src_texts)).replace(",", ".")
+            src_nums = [float(x) for x in re.findall(r"\d+(?:\.\d+)?", joined)]
             for n in NUM_RE.findall(c["text"]):
                 n2 = n.replace(",", ".")
-                if len(n2) >= 2 and n2 not in joined and n2.rstrip("0").rstrip(".") not in joined:
-                    res["numbers_missing"].append(n)
+                if len(n2) < 2 or n2 in joined:
+                    continue
+                digits = len(n2.split(".")[1]) if "." in n2 else 0
+                if any(abs(round(x, digits) - float(n2)) < 1e-9 for x in src_nums):  # число в источнике, но округлено иначе
+                    continue
+                res["numbers_missing"].append(n)
         c["quote_check"] = res
         stat[res["status"]] = stat.get(res["status"], 0) + 1
         if res["status"] in ("missing", "close") or res["numbers_missing"]:
             problems.append(c)
     S.save_claims(claims)
     names = {"ok": "цитата найдена дословно", "close": "близко к тексту (перефраз)", "missing": "цитата НЕ найдена",
+             "computed": "расчёт: проверены числа по выводу скрипта",
              "location": "указано место, не цитата", "no_snapshot": "нет локального снимка источника", "no_quote": "нет цитаты"}
     print("Сверка цитат фактов с сохранёнными снимками источников (без LLM, бесплатно):")
     for k, n in sorted(stat.items(), key=lambda x: -x[1]):

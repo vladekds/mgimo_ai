@@ -1,0 +1,37 @@
+{
+  "session_id": "5e212bdf-9fe8-5435-9c74-0db3aafddaeb",
+  "by_stage": {
+    "collect": 0.75315,
+    "options": 1.986483
+  },
+  "updated_at": "2026-11-14T08:54:11+00:00",
+  "first_at": "2026-11-14T08:49:02.838081+00:00",
+  "last_at": "2026-11-14T08:54:11.496Z",
+  "by_model": {
+    "claude-opus-5-5": {
+      "usd": 0.25927520000000026,
+      "input": 10,
+      "output": 5662,
+      "cache_read": 48126,
+      "cache_write": 27274,
+      "calls": 4
+    },
+    "claude-fable-5-2": {
+      "usd": 2.0739059999999974,
+      "input": 24,
+      "output": 18398,
+      "cache_read": 5148520,
+      "cache_write": 30809,
+      "calls": 11
+    },
+    "claude-sonnet-5-5": {
+      "usd": 0.40645190000000003,
+      "input": 36,
+      "output": 20461,
+      "cache_read": 436949,
+      "cache_write": 63230,
+      "calls": 18
+    }
+  },
+  "usd": 2.7396
+}

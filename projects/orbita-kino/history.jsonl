@@ -1,0 +1,71 @@
+{"event": "claim_added", "id": "H-001", "type": "hypothesis", "at": "2026-11-14T08:47:47+00:00"}
+{"event": "claim_added", "id": "A-001", "type": "assumption", "at": "2026-11-14T08:47:48+00:00"}
+{"event": "claim_added", "id": "F-001", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-002", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-003", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-004", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-005", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-006", "type": "fact", "at": "2026-11-14T08:48:36+00:00"}
+{"event": "claim_added", "id": "F-007", "type": "fact", "at": "2026-11-14T08:48:37+00:00"}
+{"event": "claim_added", "id": "H-002", "type": "hypothesis", "at": "2026-11-14T08:48:43+00:00"}
+{"event": "claim_added", "id": "H-003", "type": "hypothesis", "at": "2026-11-14T08:48:43+00:00"}
+{"event": "claim_added", "id": "H-004", "type": "hypothesis", "at": "2026-11-14T08:48:43+00:00"}
+{"event": "claim_added", "id": "G-001", "type": "gap", "at": "2026-11-14T08:48:43+00:00"}
+{"event": "verify", "stat": {"location": 7}, "problems": [], "at": "2026-11-14T08:48:48+00:00"}
+{"event": "claim_added", "id": "F-008", "type": "fact", "at": "2026-11-14T08:49:28+00:00"}
+{"event": "claim_added", "id": "F-009", "type": "fact", "at": "2026-11-14T08:49:28+00:00"}
+{"event": "claim_added", "id": "F-010", "type": "fact", "at": "2026-11-14T08:49:28+00:00"}
+{"event": "claim_added", "id": "F-011", "type": "fact", "at": "2026-11-14T08:49:28+00:00"}
+{"event": "claim_added", "id": "G-002", "type": "gap", "at": "2026-11-14T08:49:28+00:00"}
+{"event": "claim_added", "id": "H-005", "type": "hypothesis", "at": "2026-11-14T08:49:35+00:00"}
+{"event": "claim_added", "id": "F-012", "type": "fact", "at": "2026-11-14T08:49:35+00:00"}
+{"event": "claim_added", "id": "H-006", "type": "hypothesis", "at": "2026-11-14T08:49:35+00:00"}
+{"event": "claim_added", "id": "F-013", "type": "fact", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "F-014", "type": "fact", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "F-015", "type": "fact", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "F-016", "type": "fact", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "H-007", "type": "hypothesis", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "G-003", "type": "gap", "at": "2026-11-14T08:49:42+00:00"}
+{"event": "claim_added", "id": "A-002", "type": "assumption", "at": "2026-11-14T08:49:52+00:00"}
+{"event": "claim_added", "id": "F-017", "type": "fact", "at": "2026-11-14T08:49:52+00:00"}
+{"event": "claim_added", "id": "F-018", "type": "fact", "at": "2026-11-14T08:49:52+00:00"}
+{"event": "claim_added", "id": "G-004", "type": "gap", "at": "2026-11-14T08:49:52+00:00"}
+{"event": "claim_added", "id": "F-019", "type": "fact", "at": "2026-11-14T08:50:01+00:00"}
+{"event": "claim_added", "id": "F-020", "type": "fact", "at": "2026-11-14T08:50:02+00:00"}
+{"event": "revise", "targets": ["F-017", "F-018"], "status": "superseded", "reason": "ошибочная зависимость A-001 вместо A-002", "marked": [], "decisions": [], "at": "2026-11-14T08:50:02+00:00"}
+{"event": "claim_set", "id": "F-012", "changes": {"confidence": "medium"}, "reason": "в источниках есть S-004 (E): цитируется 52% из записки; расчёт 34,7% сделан по S-001", "at": "2026-11-14T08:50:02+00:00"}
+{"event": "verify", "stat": {"location": 7, "missing": 11}, "problems": ["F-008", "F-009", "F-010", "F-011", "F-012", "F-013", "F-014", "F-015", "F-016", "F-019", "F-020"], "at": "2026-11-14T08:50:02+00:00"}
+{"event": "claim_added", "id": "F-021", "type": "fact", "at": "2026-11-14T08:50:31+00:00"}
+{"event": "claim_added", "id": "F-022", "type": "fact", "at": "2026-11-14T08:50:32+00:00"}
+{"event": "claim_added", "id": "F-023", "type": "fact", "at": "2026-11-14T08:50:32+00:00"}
+{"event": "claim_added", "id": "F-024", "type": "fact", "at": "2026-11-14T08:50:32+00:00"}
+{"event": "claim_added", "id": "G-005", "type": "gap", "at": "2026-11-14T08:50:32+00:00"}
+{"event": "claim_added", "id": "F-025", "type": "fact", "at": "2026-11-14T08:50:32+00:00"}
+{"event": "verify", "stat": {"location": 7, "missing": 11, "ok": 5}, "problems": ["F-008", "F-009", "F-010", "F-011", "F-012", "F-013", "F-014", "F-015", "F-016", "F-019", "F-020"], "at": "2026-11-14T08:50:32+00:00"}
+{"event": "verify", "stat": {"location": 7, "computed": 11, "ok": 5}, "problems": ["F-009", "F-013"], "at": "2026-11-14T08:51:00+00:00"}
+{"event": "verify", "stat": {"location": 7, "computed": 11, "ok": 5}, "problems": ["F-013"], "at": "2026-11-14T08:51:28+00:00"}
+{"event": "claim_added", "id": "K-001", "type": "conclusion", "at": "2026-11-14T08:51:50+00:00"}
+{"event": "claim_added", "id": "K-002", "type": "conclusion", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_set", "id": "H-001", "changes": {"status": "contested"}, "reason": "данные когорт и опроса не поддерживают: см. K-002", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "K-003", "type": "conclusion", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "K-004", "type": "conclusion", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "K-005", "type": "conclusion", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "H-008", "type": "hypothesis", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "K-006", "type": "conclusion", "at": "2026-11-14T08:51:51+00:00"}
+{"event": "claim_added", "id": "P-001", "type": "forecast", "at": "2026-11-14T08:52:28+00:00"}
+{"event": "claim_added", "id": "P-002", "type": "forecast", "at": "2026-11-14T08:52:28+00:00"}
+{"event": "claim_added", "id": "P-003", "type": "forecast", "at": "2026-11-14T08:52:28+00:00"}
+{"event": "claim_added", "id": "P-004", "type": "forecast", "at": "2026-11-14T08:52:28+00:00"}
+{"event": "claim_added", "id": "P-005", "type": "forecast", "at": "2026-11-14T08:52:28+00:00"}
+{"event": "claim_added", "id": "R-001", "type": "recommendation", "at": "2026-11-14T08:53:03+00:00"}
+{"event": "claim_added", "id": "P-006", "type": "forecast", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_added", "id": "P-007", "type": "forecast", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "revise", "targets": ["F-019"], "status": "superseded", "reason": "это модельный расчёт на допущениях, а не наблюдаемый факт (замечание критика)", "marked": ["K-004", "P-001", "R-001"], "decisions": [], "at": "2026-11-14T08:54:37+00:00"}
+{"event": "revise", "targets": ["F-020"], "status": "superseded", "reason": "модельный расчёт, не факт (замечание критика)", "marked": [], "decisions": [], "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_added", "id": "G-006", "type": "gap", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "K-004", "changes": {"status": "active", "confidence": "low", "text": "Акция в нынешнем виде, вероятно, убыточна: около −280 ₽ на привлечённого, безубыточность при M3 ≈ 53% против 14–16%. Вывод условный: расчёт модельный и зависит от того, переменные ли затраты на контент", "depends_on": ["P-006", "P-007", "A-002", "G-006"]}, "reason": "переведён на прогнозы P-006, P-007; добавлена оговорка о структуре затрат", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "K-001", "changes": {"confidence": "medium"}, "reason": "критик: разложение верно арифметически, но каннибализация отдельной подписки акцией не исследована (G-004), а M3 акции для января задан условно", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "H-008", "changes": {"text": "Часть абонентов тарифа «Орбита Всё» может не знать, что кинотеатр уже входит в тариф. Сигнал — одно интервью абонента тарифа [F-022]", "depends_on": ["F-022", "G-005"]}, "reason": "критик: респондент 2 не абонент тарифа, опора только на F-022", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "P-003", "changes": {"text": "Информирование абонентов тарифа о включённом кинотеатре может увеличить активную базу с удержанием около 70%. Выручку это не увеличивает (тариф уже оплачен), а затраты на контент растут; выгода возможна только через снижение оттока с тарифа — данных нет"}, "reason": "критик: «без затрат» неверно", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "R-001", "changes": {"status": "active", "text": "Основной вариант — «Честная акция» (прозрачные условия, уведомление до списания, объём не удваивать), но до решения нужны три дешёвые проверки: структура затрат на контент, пересчёт модели с переходной ценой, доля абонентов тарифа без входов в сервис. Закупку контента в этом квартале не начинать"}, "reason": "уточнена после критики: добавлены условия", "at": "2026-11-14T08:54:37+00:00"}
+{"event": "claim_set", "id": "P-001", "changes": {"status": "active"}, "reason": "основания пересмотрены: K-004 теперь условный вывод; прогноз остаётся с низкой уверенностью", "at": "2026-11-14T08:55:11+00:00"}

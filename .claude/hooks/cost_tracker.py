@@ -91,6 +91,7 @@ def write_baseline(pd, sid, tp):
         return
     by_model, _, _ = parse(session_files(tp))
     base.parent.mkdir(parents=True, exist_ok=True)
+    by_model["_started_at"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
     base.write_text(json.dumps(by_model, ensure_ascii=False), encoding="utf-8")
 
 
@@ -108,6 +109,7 @@ def main():
         base_file = target_dir / f".base-{sid}.json"
         if base_file.exists():  # вычитаем расходы сессии, сделанные до начала работы над этим проектом
             base = json.loads(base_file.read_text(encoding="utf-8"))
+            first = base.pop("_started_at", None) or first
             for model, b in base.items():
                 if model in by_model:
                     for k in ("usd", "input", "output", "cache_read", "cache_write", "calls"):
@@ -131,7 +133,7 @@ def main():
             by_stage[stage] = round(by_stage.get(stage, 0.0) + delta, 6)
         out = {"session_id": sid, "by_stage": by_stage,
                "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
-               "first_at": prev.get("first_at") or (first if not base_file.exists() else dt.datetime.now(dt.timezone.utc).isoformat()),
+               "first_at": first,
                "last_at": last, "by_model": by_model, "usd": round(total, 4)}
         (target_dir / f"{sid}.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
