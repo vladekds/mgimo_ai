@@ -28,3 +28,6 @@ projects/_screenshots/
 
 # Служебные файлы учёта стоимости
 projects/*/cost/.*
+
+# Служебные файлы сравнения
+bench/*.err
