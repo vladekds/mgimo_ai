@@ -1,0 +1,9 @@
+{
+  "model": [
+    "claude-fable-5-2"
+  ],
+  "cost_usd": 1.7102736,
+  "seconds": 232,
+  "turns": 9,
+  "chars": 13193
+}
