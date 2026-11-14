@@ -10,6 +10,7 @@ case "$1" in
   ingest)  shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/ingest.py" "$@" ;;
   py)      shift; exec bash "$DIR/.claude/hooks/py.sh" "$@" ;;
   html)    shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/render_html.py" "$@" ;;
+  bench)   shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/bench.py" "$@" ;;
   profile) shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/profile_table.py" "$@" ;;
   *)       exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/strateg.py" "$@" ;;
 esac
