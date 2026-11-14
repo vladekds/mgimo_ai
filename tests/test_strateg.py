@@ -133,6 +133,21 @@ class TestWorkflow(Base):
             self.run_cli("stage", stage, "done")
         self.assertNotEqual(self.run_cli("stage", "options", "done", ok=False).returncode, 0)
 
+    def test_project_created_before_gates_still_works(self):
+        d = self.project()
+        f = d / ("state" + ".json")
+        st = json.loads(f.read_text(encoding="utf-8"))
+        for key in ("gates", "mode", "budget_usd"):
+            st.pop(key, None)
+        st["stages"]["frame"] = "done"
+        st["stage"] = "collect"
+        f.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+        (d / "plan.jsonl").unlink()
+        self.assertIn("Сбор материалов", self.out("status", "--brief"))
+        self.assertNotIn("без подтверждения человека", self.out("check"))
+        self.run_cli("stage", "collect", "done")
+        self.assertNotEqual(self.run_cli("stage", "options", "done", ok=False).returncode, 0)  # новые развилки действуют
+
     def test_plan_is_idempotent(self):
         self.project()
         self.assertEqual(self.out("plan", "add", "--q", "Где отток?", "--why", "онбординг или ценность"), "Q-001")

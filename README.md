@@ -143,7 +143,7 @@ flowchart LR
 - Через MCP нельзя пройти развилку или поменять бюджет: это решения человека.
 
 ## Проверено
-- **22 автотеста** (CLI, хуки, MCP, чтение документов, клиент Jev): `python -m unittest discover -s tests -v`.
+- **23 автотеста** (CLI, хуки, MCP, чтение документов, клиент Jev): `python -m unittest discover -s tests -v`.
 - **CI на Linux, Windows и macOS** × Python 3.9 и 3.13 — при каждой отправке.
 - **Живые прогоны** в Claude Code на Windows (пользователь) и Linux; найденные в них ошибки и исправления — в [`docs/DESCRIPTION.md`](docs/DESCRIPTION.md).
 - Сквозной сценарий без участия человека: `bash scripts/dev/e2e.sh`.

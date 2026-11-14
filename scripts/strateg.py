@@ -160,6 +160,10 @@ def load_state(slug: str | None = None) -> dict:
     st = read_json(pdir(slug) / "state.json")
     if st is None:
         die(f"нет state.json в проекте {slug or active_slug()}")
+    if "gates" not in st:  # проект создан до появления режимов и развилок: уже закрытые этапы не блокируем
+        st.setdefault("mode", "full")
+        st["gates"] = {k: {"at": None, "choice": "этап закрыт до появления развилок", "legacy": True}
+                       for k, v in st.get("stages", {}).items() if v == "done" and k in GATE_TEXT}
     return st
 
 
