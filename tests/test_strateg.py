@@ -211,6 +211,8 @@ class TestHooks(Base):
             return {"tool_name": "Bash", "tool_input": {"command": cmd}}
         self.assertEqual(self.decision(b('echo "{}" > ' + STATE)), "deny")
         self.assertEqual(self.decision(b("sed -i s/a/b/ " + CLAIMS)), "deny")
+        self.assertEqual(self.decision(b("cp backup.json " + STATE)), "deny")  # копирование в файлы состояния запрещено всегда
+        self.assertEqual(self.decision(b("cp examples/orbita-kino/inputs/cohorts.csv projects/demo/inputs/")), "allow")
         self.assertEqual(self.decision(b("cat " + STATE)), "allow")
         self.assertEqual(self.decision(b('./strateg gate options --choice "Вариант Б"')), "ask")
         self.assertEqual(self.decision(b("./strateg gate options --choice x"), {**self.env, "STRATEG_AUTOGATE": "1"}), "allow")
