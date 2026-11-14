@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
-PROJECTS = ROOT / "projects"
+PROJECTS = Path(os.environ.get("STRATEG_PROJECTS_DIR") or ROOT / "projects")
 
 
 def read_input() -> dict:

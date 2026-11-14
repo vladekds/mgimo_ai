@@ -263,7 +263,7 @@ def main():
     slug = a.slug or S.active_slug()
     out = build(slug)
     S.journal("Собран HTML-отчёт outputs/REPORT.html", slug)
-    print(out.relative_to(ROOT))
+    print(out)
 
 
 if __name__ == "__main__":

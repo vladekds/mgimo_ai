@@ -16,8 +16,12 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+if __name__ == "__main__":
+    sys.modules.setdefault("strateg", sys.modules["__main__"])  # чтобы strateg_ext видел тот же модуль
+
 ROOT = Path(__file__).resolve().parent.parent
-PROJECTS = ROOT / "projects"
+PROJECTS = Path(os.environ.get("STRATEG_PROJECTS_DIR") or ROOT / "projects")
 ACTIVE_FILE = PROJECTS / ".active"
 
 STAGES = [
@@ -54,6 +58,16 @@ RELIABILITY = {
     "C": "СМИ, отраслевые блоги, обзоры с указанием методики",
     "D": "мнения, форумы, отзывы, маркетинговые материалы",
     "E": "непроверяемо / неизвестное происхождение",
+}
+MODES = {
+    # режим -> (бюджет по умолчанию в $ по ценам API, этапы с обязательным подтверждением человека)
+    "full": (8.0, ["frame", "options", "strategy"]),
+    "express": (2.0, ["options"]),
+}
+GATE_TEXT = {
+    "frame": "постановка задачи утверждена человеком",
+    "options": "человек выбрал вариант(ы) для проработки",
+    "strategy": "человек утвердил стратегию и рекомендацию",
 }
 ID_RE = re.compile(r"\b([FHPAYGKRSD])-(\d{3,})\b")
 
@@ -186,6 +200,9 @@ def cmd_init(a):
         "title": a.title or slug,
         "created_at": now(),
         "updated_at": now(),
+        "mode": a.mode,
+        "budget_usd": a.budget if a.budget is not None else MODES[a.mode][0],
+        "gates": {},
         "stage": "frame",
         "stages": {k: ("in_progress" if k == "frame" else "pending") for k in STAGE_KEYS},
         "brief": {
@@ -200,7 +217,8 @@ def cmd_init(a):
         "human_decisions": [],
     }
     write_json(d / "state.json", st)
-    for f in ["sources.jsonl", "claims.jsonl", "decisions.jsonl", "history.jsonl", "activity.jsonl"]:
+    for f in ["sources.jsonl", "claims.jsonl", "decisions.jsonl", "history.jsonl", "activity.jsonl", "plan.jsonl",
+              "routing.jsonl"]:
         (d / f).touch()
     (d / "journal.md").write_text(f"# Журнал проекта «{st['title']}»\n\n", encoding="utf-8")
     (d / "inputs" / "README.md").write_text(
@@ -209,7 +227,7 @@ def cmd_init(a):
     ACTIVE_FILE.parent.mkdir(parents=True, exist_ok=True)
     ACTIVE_FILE.write_text(slug, encoding="utf-8")
     journal("Проект создан" + (f". Исходный запрос: «{a.question}»" if a.question else ""), slug)
-    print(f"Создан проект {slug} и сделан активным: {d.relative_to(ROOT)}")
+    print(f"Создан проект {slug} и сделан активным: {d}")
 
 
 def cmd_use(a):
@@ -242,10 +260,20 @@ def progress_bar(st: dict) -> str:
 
 def cost_totals(slug: str | None = None) -> dict:
     tot = {"usd": 0.0, "input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "sessions": 0,
-           "by_model": {}, "turns": 0}
+           "by_model": {}, "turns": 0, "by_stage": {}, "seconds": 0.0}
     for f in sorted((pdir(slug) / "cost").glob("*.json")):
         c = read_json(f, {})
-        tot["sessions"] += 1
+        if "by_model" not in c:
+            continue
+        tot["sessions"] += 0 if c.get("kind") == "external" else 1
+        for stg, usd in c.get("by_stage", {}).items():
+            tot["by_stage"][stg] = tot["by_stage"].get(stg, 0.0) + usd
+        if c.get("first_at") and c.get("last_at"):
+            try:
+                tot["seconds"] += (dt.datetime.fromisoformat(c["last_at"].replace("Z", "+00:00")) -
+                                   dt.datetime.fromisoformat(c["first_at"].replace("Z", "+00:00"))).total_seconds()
+            except ValueError:
+                pass
         for model, m in c.get("by_model", {}).items():
             bm = tot["by_model"].setdefault(model, {"usd": 0.0, "input": 0, "output": 0,
                                                      "cache_read": 0, "cache_write": 0, "calls": 0})
@@ -273,8 +301,12 @@ def cmd_status(a):
     review = [c["id"] for c in claims if c["status"] == "needs_review"]
     cost = cost_totals(slug)
     print(f"# Проект: {st['title']} ({slug})")
-    print(f"Этап: {STAGE_NAMES.get(st['stage'], st['stage'])}")
+    mode = st.get("mode", "full")
+    print(f"Этап: {STAGE_NAMES.get(st['stage'], st['stage'])} | Режим: {'экспресс' if mode == 'express' else 'полный'}")
     print(f"Путь: {progress_bar(st)}")
+    need = [g for g in MODES[mode][1] if g not in st.get("gates", {})]
+    if st["stage"] in need:
+        print(f"🚦 Развилка этапа: нужно подтверждение человека ({GATE_TEXT[st['stage']]}) → ./strateg gate {st['stage']} --choice \"…\"")
     q = st["brief"].get("question")
     if q:
         print(f"Вопрос: {q}")
@@ -293,13 +325,23 @@ def cmd_status(a):
         print("Ответы человека на развилках (учитывай, не переспрашивай):")
         for h in st["human_decisions"][-6:]:
             print(f"  - {h['question']} → {h['answer']}")
+    plan = [q for q in read_jsonl(pdir(slug) / "plan.jsonl") if q["status"] in ("open", "in_progress")]
+    if plan:
+        print("План исследования — не закрыто:")
+        for q in plan[:8]:
+            mark = "▶️ начат, проверь частичный результат" if q["status"] == "in_progress" else "⬜"
+            print(f"  - {q['id']} {mark}: {q['question']}")
     print(f"Следующий шаг: {st.get('next_action') or '—'}")
     if st.get("checkpoints"):
         last = st["checkpoints"][-1]
         print(f"Последняя контрольная точка: {last['at']} — {last['note']}")
-    if cost["sessions"]:
+    if cost["by_model"]:
+        budget = st.get("budget_usd")
+        share = f" — {100 * cost['usd'] / budget:.0f}% бюджета ${budget:g}" if budget else ""
         print(f"Стоимость (эквивалент API): ${cost['usd']:.2f} за {cost['sessions']} сесс., "
-              f"{cost['turns']} вызовов модели")
+              f"{cost['turns']} вызовов модели{share}")
+        if budget and cost["usd"] >= 0.8 * budget:
+            print("⚠️ Бюджет почти исчерпан: сообщи пользователю и спроси, продолжать ли / поднять лимит (./strateg budget --set N)")
     if not a.brief:
         log = (pdir(slug) / "journal.md").read_text(encoding="utf-8").strip().splitlines()
         tail = [l for l in log if l.startswith("- ")][-a.tail:]
@@ -312,6 +354,10 @@ def cmd_stage(a):
     st = load_state()
     if a.name not in STAGE_KEYS:
         die(f"этап: {', '.join(STAGE_KEYS)}")
+    mode = st.get("mode", "full")
+    if a.status == "done" and a.name in MODES[mode][1] and a.name not in st.get("gates", {}):
+        die(f"этап «{STAGE_NAMES[a.name]}» — развилка: нужно подтверждение человека ({GATE_TEXT[a.name]}). "
+            f"Покажи результат пользователю, получи его выбор и выполни: ./strateg gate {a.name} --choice \"<что выбрал человек>\"")
     st["stages"][a.name] = a.status
     if a.status == "in_progress":
         st["stage"] = a.name
@@ -769,6 +815,8 @@ def cmd_check(a):
             warns.append("03_options.md: у вариантов мало сильных возражений")
     if not any(c["type"] == "gap" for c in claims):
         warns.append("не зафиксировано ни одного пробела (gap) — честно назовите, чего мы не знаем")
+    import strateg_ext
+    strateg_ext.extra_checks(claims, sources, errors, warns)
     print(f"Проверка проекта {slug}: ошибок {len(errors)}, предупреждений {len(warns)}")
     for e in errors:
         print(f"  ❌ {e}")
@@ -781,7 +829,7 @@ def cmd_check(a):
 # ---------------------------------------------------------------- стоимость
 def cmd_cost(a):
     tot = cost_totals()
-    if not tot["sessions"]:
+    if not tot["by_model"]:
         print("Данных о стоимости пока нет (они пишутся хуком после каждого ответа агента)")
         return
     print(f"Сессий: {tot['sessions']}, вызовов модели: {tot['turns']}")
@@ -791,14 +839,16 @@ def cmd_cost(a):
     print("По моделям:")
     for m, v in sorted(tot["by_model"].items(), key=lambda x: -x[1]["usd"]):
         print(f"  {m:28} ${v['usd']:.3f}  вызовов {v['calls']}")
-    durations = []
-    for f in sorted((pdir() / "cost").glob("*.json")):
-        c = read_json(f, {})
-        if c.get("first_at") and c.get("last_at"):
-            durations.append((dt.datetime.fromisoformat(c["last_at"].replace("Z", "+00:00")) -
-                              dt.datetime.fromisoformat(c["first_at"].replace("Z", "+00:00"))).total_seconds())
-    if durations:
-        print(f"Время работы агента (сумма сессий): {sum(durations) / 60:.0f} мин")
+    if tot["by_stage"]:
+        print("По этапам (приблизительно — по этапу на момент ответа):")
+        for k in STAGE_KEYS:
+            if k in tot["by_stage"]:
+                print(f"  {STAGE_NAMES[k]:28} ${tot['by_stage'][k]:.2f}")
+    if tot["seconds"]:
+        print(f"Время от первого до последнего действия (сумма сессий, включая ожидание человека): {tot['seconds'] / 60:.0f} мин")
+    st = load_state()
+    if st.get("budget_usd"):
+        print(f"Бюджет: ${st['budget_usd']:g}, израсходовано {100 * tot['usd'] / st['budget_usd']:.0f}%")
     print("Примечание: на подписке Claude Pro/Max фактический платёж фиксирован; "
           "здесь — эквивалент по публичным ценам API, чтобы сравнивать варианты.")
 
@@ -843,7 +893,7 @@ def cmd_report(a):
     target = out / "REPORT.md"
     target.write_text("\n".join(lines) + "\n", encoding="utf-8")
     journal("Собран итоговый отчёт outputs/REPORT.md")
-    print(f"Отчёт: {target.relative_to(ROOT)}")
+    print(f"Отчёт: {target}")
 
 
 # ---------------------------------------------------------------- поиск
@@ -905,7 +955,9 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     p = sub.add_parser("init", help="создать проект");
-    p.add_argument("slug"); p.add_argument("--title"); p.add_argument("--question"); p.set_defaults(f=cmd_init)
+    p.add_argument("slug"); p.add_argument("--title"); p.add_argument("--question")
+    p.add_argument("--mode", choices=list(MODES), default="full", help="full — полный путь; express — быстрый и дешёвый")
+    p.add_argument("--budget", type=float, help="лимит стоимости в $ (эквивалент API)"); p.set_defaults(f=cmd_init)
     p = sub.add_parser("use", help="сделать проект активным"); p.add_argument("slug"); p.set_defaults(f=cmd_use)
     p = sub.add_parser("list", help="список проектов"); p.set_defaults(f=cmd_list)
     p = sub.add_parser("status", help="где мы сейчас")
@@ -979,6 +1031,9 @@ def main(argv=None):
     p = sub.add_parser("report", help="собрать итоговый отчёт"); p.set_defaults(f=cmd_report)
     p = sub.add_parser("search", help="поиск по реестру, источникам и решениям (с учётом связей)")
     p.add_argument("query", nargs="+"); p.add_argument("--limit", type=int, default=15); p.set_defaults(f=cmd_search)
+
+    import strateg_ext
+    strateg_ext.register(sub)
 
     a = ap.parse_args(argv)
     a.f(a)

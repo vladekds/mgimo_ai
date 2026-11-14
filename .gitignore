@@ -23,3 +23,5 @@ projects/.active
 projects/_unassigned_cost/
 *.tmp
 .claude/hooks/.python
+.playwright-mcp/
+projects/_screenshots/

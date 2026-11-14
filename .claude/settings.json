@@ -25,7 +25,10 @@
       "mcp__playwright__browser_scroll",
       "mcp__playwright__browser_hover",
       "mcp__playwright__browser_click",
-      "mcp__strateg"
+      "mcp__strateg",
+      "Bash(bash ./strateg:*)",
+      "Bash(python scripts/strateg.py:*)",
+      "Bash(python3 scripts/strateg.py:*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -91,6 +94,17 @@
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/cost_tracker.py\"",
             "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/py.sh\" \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre_compact.py\"",
+            "timeout": 20
           }
         ]
       }

@@ -47,5 +47,24 @@ if tool in ("WebFetch", "WebSearch", "Read") or tool.startswith("mcp__"):
 if is_error:
     notes.append("Инструмент вернул ошибку. Не повторяй действие вслепую: проверь, не выполнено ли оно частично "
                  "(journal.md / activity.jsonl), выбери запасной путь из AGENTS.md → «Сбои», запиши в журнал.")
+if pd is not None:
+    try:
+        st = json.loads((pd / "state.json").read_text(encoding="utf-8"))
+        budget = st.get("budget_usd")
+        if budget:
+            spent = 0.0
+            for f in (pd / "cost").glob("*.json"):
+                spent += sum(m.get("usd", 0) for m in json.loads(f.read_text(encoding="utf-8")).get("by_model", {}).values())
+            for level in (100, 80):
+                flag = pd / "cost" / f".warned{level}"
+                if spent >= budget * level / 100 and not flag.exists():
+                    flag.write_text(str(spent), encoding="utf-8")
+                    notes.append(f"💰 Израсходовано ${spent:.2f} — {100 * spent / budget:.0f}% бюджета проекта (${budget:g}). "
+                                 + ("ЛИМИТ ДОСТИГНУТ: остановись, сохрани контрольную точку и спроси пользователя, поднять ли лимит "
+                                    "(./strateg budget --set N) или завершить с тем, что есть." if level == 100 else
+                                    "Сообщи пользователю и заверши этап самым дешёвым способом; не запускай новых дорогих субагентов без нужды."))
+                    break
+    except Exception:
+        pass
 if notes:
     emit({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": "\n".join(notes)}})

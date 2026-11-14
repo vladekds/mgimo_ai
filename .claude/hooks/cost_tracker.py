@@ -90,7 +90,23 @@ if tp:
     target_dir = (pd / "cost") if pd else (PROJECTS / "_unassigned_cost")
     try:
         target_dir.mkdir(parents=True, exist_ok=True)
-        out = {"session_id": sid, "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
+        total = round(sum(m["usd"] for m in by_model.values()), 6)
+        prev = {}
+        try:
+            prev = json.loads((target_dir / f"{sid}.json").read_text(encoding="utf-8"))
+        except Exception:
+            pass
+        by_stage = dict(prev.get("by_stage", {}))
+        stage = "unknown"
+        if pd:
+            try:
+                stage = json.loads((pd / "state.json").read_text(encoding="utf-8")).get("stage", "unknown")
+            except Exception:
+                pass
+        delta = total - sum(by_stage.values())
+        if delta > 0:  # прирост с прошлого ответа относим к текущему этапу
+            by_stage[stage] = round(by_stage.get(stage, 0.0) + delta, 6)
+        out = {"session_id": sid, "by_stage": by_stage, "updated_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
                "first_at": first, "last_at": last, "by_model": by_model,
                "usd": round(sum(m["usd"] for m in by_model.values()), 4)}
         (target_dir / f"{sid}.json").write_text(json.dumps(out, ensure_ascii=False, indent=2), encoding="utf-8")

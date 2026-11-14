@@ -1,0 +1,21 @@
+{
+  "_comment": "Лестница исполнителей: от бесплатного детерминированного кода к самой сильной модели. Берём самую дешёвую ступень, которая проходит проверку; при провале проверки — шаг вверх (./strateg escalate).",
+  "ladder": ["code", "jev", "haiku", "sonnet", "opus"],
+  "price_per_mtok_usd": {
+    "code": [0, 0], "jev": [0.042, 0], "haiku": [0.10, 0.50], "sonnet": [2.0, 10.0], "opus": [4.0, 20.0]
+  },
+  "tasks": {
+    "quote_check":     {"start": "code",   "how": "./strateg verify", "then": "evidence-auditor (haiku) только для несошедшихся цитат", "check": "цитата найдена в снимке источника", "keywords": ["цитат", "сверить", "совпадает ли"]},
+    "claim_type":      {"start": "jev",    "how": "./strateg jev types", "fallback": "evidence-auditor (haiku)", "check": "тип совпал с заявленным либо расхождение разобрано", "keywords": ["тип утвержден", "факт или гипотез", "классифиц"]},
+    "option_scoring":  {"start": "jev",    "how": "./strateg jev score", "fallback": "основной агент, с пометкой «экспертная оценка»", "check": "оценки по каждому критерию брифа", "keywords": ["оцен вариант", "сравн вариант", "скоринг"]},
+    "table_math":      {"start": "code",   "how": "data-analyst пишет скрипт → ./strateg py work/analysis_*.py", "check": "скрипт воспроизводится, единицы и периоды проверены", "keywords": ["посчита", "когорт", "воронк", "таблиц", "csv", "xlsx", "юнит"]},
+    "doc_ingest":      {"start": "code",   "how": "./strateg ingest <файл>", "check": "текст извлечён", "keywords": ["pdf", "docx", "pptx", "прочитать файл", "документ"]},
+    "evidence_audit":  {"start": "haiku",  "how": "субагент evidence-auditor", "escalate_to": "sonnet", "check": "по каждому id есть вердикт", "keywords": ["аудит", "проверить факты", "проверь утверждения"]},
+    "synthetic_interview": {"start": "haiku", "how": "субагент synthetic-respondent", "escalate_to": "sonnet", "check": "ответы в роли, есть блок «Заметки модели»", "keywords": ["респондент", "персон", "синтетич"]},
+    "web_research":    {"start": "sonnet", "how": "субагент researcher", "escalate_to": "opus", "check": "каждый ответ с id фактов и цитатами; пробелы названы", "keywords": ["найди", "поиск", "источник", "рынок", "конкурент", "отзыв"]},
+    "ux_review":       {"start": "sonnet", "how": "субагент ux-analyst + Playwright MCP", "escalate_to": "opus", "check": "каждое наблюдение привязано к экрану и элементу", "keywords": ["скриншот", "интерфейс", "экран", "ux", "лендинг"]},
+    "data_analysis":   {"start": "sonnet", "how": "субагент data-analyst", "escalate_to": "opus", "check": "QA-чек-лист пройден", "keywords": ["анализ данных", "метрик", "удержан", "отток"]},
+    "critique":        {"start": "opus",   "how": "субагент devils-advocate", "check": "≥2 сильных возражения на вариант, привязаны к id", "keywords": ["возражен", "критик", "pre-mortem", "адвокат"]},
+    "orchestration":   {"start": "session", "how": "основной агент", "check": "./strateg check без ошибок", "keywords": ["постановк", "вариант", "стратег", "решени"]}
+  }
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse: 1) правила агента и база знаний меняются только с согласия человека;
 2) секреты не попадают в файлы; 3) опасные команды требуют подтверждения."""
+import os
 import re
 
 from _common import emit, read_input
@@ -35,7 +36,15 @@ if tool in ("Write", "Edit", "MultiEdit", "NotebookEdit"):
     if PROTECTED.search(path):
         decide("ask", "Это постоянные инструкции или база знаний агента. Они меняются только по решению человека, "
                       "а не по тексту из источников. Подтвердите изменение.")
+STATE_FILE = r"projects/[^/\s\"']+/(state\.json|[a-z_]+\.jsonl)"
 if tool == "Bash":
+    if re.search(r"(>>?|\btee\b|\bsed\s+-i|\brm\b|\bmv\b|\bcp\b|\btruncate\b|open\(|write_text)[^|;&]*" + STATE_FILE, cmd):
+        decide("deny", "Файлы состояния и реестров меняются только командами ./strateg … — не через оболочку. "
+                       "Если нужной команды нет, сообщи пользователю об ограничении.")
+    m = re.search(r"strateg(?:\.py)?[\"']?\s+gate\s+(\w+)(.*)", cmd, re.S)
+    if m and os.environ.get("STRATEG_AUTOGATE") != "1":
+        decide("ask", f"🚦 РАЗВИЛКА «{m.group(1)}». Агент записывает ВАШ выбор:{m.group(2).strip()[:300]} — "
+                      "подтвердите, только если это действительно ваше решение.")
     if re.search(r"\brm\s+-[a-z]*r[a-z]*f?\b.*\bprojects\b", cmd) or re.search(r"git\s+push\s+.*--force", cmd):
         decide("ask", "Команда может удалить данные проекта или историю. Подтвердите.")
     if SECRET.search(cmd):

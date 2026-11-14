@@ -1,0 +1,39 @@
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.9", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Автотесты (CLI, хуки, MCP, чтение документов, Jev-клиент)
+        run: python -m unittest discover -s tests -v
+      - name: Запуск через ./strateg в bash (на Windows — Git Bash, как у пользователя)
+        shell: bash
+        run: |
+          ./strateg doctor
+          export STRATEG_PROJECTS_DIR="$RUNNER_TEMP/strateg-projects"
+          ./strateg init ci-demo --title "Проверка CI" --question "Почему падает удержание?"
+          ./strateg gate frame --choice "Подтверждаю (CI)"
+          ./strateg stage frame done
+          ./strateg status
+      - name: MCP-сервер стартует через node-лаунчер
+        shell: bash
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | node .claude/mcp/strateg.mjs | grep -q '"verify_quotes"'
