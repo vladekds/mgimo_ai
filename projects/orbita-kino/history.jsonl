@@ -72,3 +72,5 @@
 {"event": "claim_added", "id": "F-026", "type": "fact", "at": "2026-11-15T08:07:37+00:00"}
 {"event": "claim_added", "id": "P-008", "type": "forecast", "at": "2026-11-15T08:07:37+00:00"}
 {"event": "claim_added", "id": "R-002", "type": "recommendation", "at": "2026-11-15T08:07:37+00:00"}
+{"event": "claim_added", "id": "G-007", "type": "gap", "at": "2026-11-15T08:09:53+00:00"}
+{"event": "claim_added", "id": "P-009", "type": "forecast", "at": "2026-11-15T08:09:53+00:00"}

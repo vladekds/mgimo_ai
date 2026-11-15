@@ -321,6 +321,19 @@ class TestMcpAndTools(Base):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("похожий на инструкцию", r.stdout)
 
+    def test_annotate_makes_documents_self_contained(self):
+        d = self.seed()
+        doc = d / "outputs" / "02_situation.md"
+        doc.write_text("# Картина\nРекомендуем вернуть тариф [R-001].\n", encoding="utf-8")
+        self.assertIn("не расшифрованы", self.out("check"))
+        self.run_cli("annotate")
+        self.run_cli("annotate")  # повторный запуск не дублирует справку
+        text = doc.read_text(encoding="utf-8")
+        self.assertEqual(text.count("Справка по меткам"), 1)
+        for rid in ("R-001", "H-001", "F-001", "S-001", "отток вырос на 3,5 п.п."):  # вся цепочка до источника и цитаты
+            self.assertIn(rid, text)
+        self.assertNotIn("не расшифрованы", self.out("check"))
+
     def test_why_shows_chain_down_to_sources(self):
         self.seed()
         out = self.out("why", "R-001")

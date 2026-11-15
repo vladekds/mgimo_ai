@@ -450,6 +450,12 @@ def refs_block(text: str, claims: dict, sources: dict, decisions: dict) -> str:
     ids = list(dict.fromkeys(f"{p}-{n}" for p, n in S.ID_RE.findall(text)))
     if not ids:
         return ""
+    i = 0
+    while i < len(ids):  # добавляем основания упомянутых утверждений: в справке не должно быть «висячих» меток
+        for dep in claims.get(ids[i], {}).get("depends_on", []) + decisions.get(ids[i], {}).get("based_on", []):
+            if dep not in ids:
+                ids.append(dep)
+        i += 1
     cell = lambda s: str(s).replace("|", "/").replace("\n", " ")
     rows, used_sources = [], []
     for rid in ids:
@@ -479,9 +485,9 @@ def refs_block(text: str, claims: dict, sources: dict, decisions: dict) -> str:
         where = s.get("url") or s.get("path") or "—"
         rows.append(f"| {sid} | источник, надёжность {s['reliability']} | {cell(s['title'])} | {cell(where)}"
                     + (f"; опубликовано {s['published']}" if s.get("published") else "") + " |")
-    return (f"\n{REFS_A}\n## Справка по меткам\n\nКаждая метка в тексте ведёт к записи реестра: что утверждается и откуда это известно. "
+    return (f"\n{REFS_A}\n<details>\n<summary><b>Справка по меткам</b> ({len(rows)} записей): что утверждается и откуда это известно</summary>\n\n"
             "Надёжность источников: A — первичные данные, B — исследования и интервью, C — СМИ и обзоры, D — мнения и отзывы, E — непроверяемо.\n\n"
-            "| Метка | Что это | Утверждение | Откуда известно |\n|---|---|---|---|\n" + "\n".join(rows) + f"\n{REFS_B}\n")
+            "| Метка | Что это | Утверждение | Откуда известно |\n|---|---|---|---|\n" + "\n".join(rows) + f"\n\n</details>\n{REFS_B}\n")
 
 
 def cmd_annotate(a):
