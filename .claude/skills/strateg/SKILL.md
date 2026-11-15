@@ -47,6 +47,7 @@ argument-hint: "[новая задача | продолжить | статус]"
 Дальше: …
 Стоимость: $… из $… (./strateg stats)
 ```
+Перед этим, если этап писал документы: `./strateg annotate` (расшифровка меток) и `./strateg check`.
 Затем `./strateg stage <этап> done --note "<итог>"`, `./strateg checkpoint "<итог>"`, `./strateg next "<следующий шаг>"`.
 
 ## 5. Память о выборе человека

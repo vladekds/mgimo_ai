@@ -801,7 +801,7 @@ def cmd_check(a):
         errors.append(f"{s}: вывод опирается только на синтетических респондентов")
     # проверка ссылок в итоговых документах
     out = pdir() / "outputs"
-    for md in sorted(out.glob("*.md")):
+    for md in sorted(out.glob("0[1-7]_*.md")):  # сводные REPORT.* не проверяем: в их приложениях реестр целиком
         text = md.read_text(encoding="utf-8")
         for m in ID_RE.finditer(text):
             rid = f"{m.group(1)}-{m.group(2)}"
@@ -881,7 +881,10 @@ def cmd_report(a):
               "**G** — пробел в знаниях, **K** — вывод, **R** — рекомендация, **S** — источник, **D** — решение. "
               "Полный реестр — в приложении.", ""]
     for p in parts:
-        lines.append(p.read_text(encoding="utf-8").rstrip())
+        text = p.read_text(encoding="utf-8")
+        if "<!-- strateg:refs:start -->" in text:  # в сводном отчёте расшифровка меток — в приложениях
+            text = text[:text.index("<!-- strateg:refs:start -->")]
+        lines.append(text.rstrip())
         lines += ["", "---", ""]
     lines += ["## Приложение A. Реестр утверждений", "",
               "| ID | Тип | Утверждение | Источники | Основания | Уверенность | Статус |", "|---|---|---|---|---|---|---|"]

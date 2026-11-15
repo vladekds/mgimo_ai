@@ -277,6 +277,7 @@ def extra_checks(claims, sources, errors, warns):
                      f"({', '.join(f'{k}: {v[:7]}' for k, v in old.items())}) — обнови или понизь уверенность")
     required = {
         "02_situation.md": [("пробелы: чего не знаем", r"не знаем|пробел")],
+        "03_options.md": [("что сделать сейчас при любом варианте", r"при любом вариант|сделать сейчас|независимо от выбор")],
         "04_product_strategy.md": [("аудитория и её задача", r"аудитори"), ("альтернативы пользователя", r"альтернатив"),
                                    ("осознанные отказы", r"отказ|не делаем"), ("связь пользы с деньгами", r"экономик|выручк|доход|затрат")],
         "05_comms_strategy.md": [("барьер понимания или выбора", r"барьер"), ("ключевое сообщение", r"ключев\w+ сообщени"),
@@ -287,6 +288,15 @@ def extra_checks(claims, sources, errors, warns):
                                   ("нежелательные последствия", r"нежелательн|защитн\w+ метрик|побочн")],
     }
     out = S.pdir() / "outputs"
+    no_refs = [f.name for f in sorted(out.glob("0[1-7]_*.md"))
+               if S.ID_RE.search(f.read_text(encoding="utf-8")) and REFS_A not in f.read_text(encoding="utf-8")]
+    if no_refs:
+        warns.append(f"в документах {', '.join(no_refs)} метки не расшифрованы — запусти ./strateg annotate")
+    jargon = re.compile(r"субагент|\bjev\b|\bcli\b|\./strateg|evidence-auditor|devils-advocate|\bхук", re.I)
+    for f in sorted(out.glob("0[1-7]_*.md")):
+        hit = jargon.search(strip_refs(f.read_text(encoding="utf-8")))
+        if hit:
+            warns.append(f"{f.name}: внутренний жаргон «{hit.group(0)}» — руководителю это не нужно, убери или перефразируй")
     for name, rules in required.items():
         f = out / name
         if not f.exists():
@@ -420,6 +430,71 @@ def cmd_stats(a):
     print(f"Эскалаций исполнителя: {s['escalations']} | пересмотров: {s['revisions']} | контрольных точек: {s['checkpoints']}")
     if s["quote_check"]:
         print("Сверка цитат: " + ", ".join(f"{k} {v}" for k, v in s["quote_check"].items()))
+
+
+# ================================================================ справка по меткам в документах
+REFS_A, REFS_B = "<!-- strateg:refs:start -->", "<!-- strateg:refs:end -->"
+CONF_RU = {"high": "высокая", "medium": "средняя", "low": "низкая"}
+STATUS_RU = {"needs_review": "на пересмотре", "contested": "оспорено", "retracted": "отозвано", "superseded": "заменено",
+             "confirmed": "подтверждено"}
+
+
+def strip_refs(text: str) -> str:
+    if REFS_A in text and REFS_B in text:
+        text = text[:text.index(REFS_A)] + text[text.index(REFS_B) + len(REFS_B):]
+    return text.rstrip() + "\n"
+
+
+def refs_block(text: str, claims: dict, sources: dict, decisions: dict) -> str:
+    """Таблица-расшифровка всех меток документа: что утверждается и откуда это известно."""
+    ids = list(dict.fromkeys(f"{p}-{n}" for p, n in S.ID_RE.findall(text)))
+    if not ids:
+        return ""
+    cell = lambda s: str(s).replace("|", "/").replace("\n", " ")
+    rows, used_sources = [], []
+    for rid in ids:
+        if rid in claims:
+            c = claims[rid]
+            kind = S.TYPE_RU[c["type"]] + f", уверенность {CONF_RU.get(c['confidence'], c['confidence'])}"
+            if c["status"] in STATUS_RU:
+                kind += f", {STATUS_RU[c['status']]}"
+            origin = []
+            for sid in c["sources"]:
+                s = sources.get(sid)
+                if s:
+                    origin.append(f"{sid} «{s['title']}»")
+                    used_sources.append(sid)
+            if c["depends_on"]:
+                origin.append("основано на " + ", ".join(c["depends_on"]))
+            if c.get("evidence"):
+                origin.append(f"цитата или место: «{c['evidence'][:160]}»")
+            rows.append(f"| {rid} | {kind} | {cell(c['text'])} | {cell('; '.join(origin)) or '—'} |")
+        elif rid in decisions:
+            d = decisions[rid]
+            rows.append(f"| {rid} | решение | {cell(d['title'])}: {cell(d['chosen_option'])} | основано на {', '.join(d['based_on'])} |")
+        elif rid in sources:
+            used_sources.append(rid)
+    for sid in dict.fromkeys(used_sources):
+        s = sources[sid]
+        where = s.get("url") or s.get("path") or "—"
+        rows.append(f"| {sid} | источник, надёжность {s['reliability']} | {cell(s['title'])} | {cell(where)}"
+                    + (f"; опубликовано {s['published']}" if s.get("published") else "") + " |")
+    return (f"\n{REFS_A}\n## Справка по меткам\n\nКаждая метка в тексте ведёт к записи реестра: что утверждается и откуда это известно. "
+            "Надёжность источников: A — первичные данные, B — исследования и интервью, C — СМИ и обзоры, D — мнения и отзывы, E — непроверяемо.\n\n"
+            "| Метка | Что это | Утверждение | Откуда известно |\n|---|---|---|---|\n" + "\n".join(rows) + f"\n{REFS_B}\n")
+
+
+def cmd_annotate(a):
+    claims = {c["id"]: c for c in S.load_claims()}
+    sources = {s["id"]: s for s in S.read_jsonl(S.pdir() / "sources.jsonl")}
+    decisions = {d["id"]: d for d in S.read_jsonl(S.pdir() / "decisions.jsonl")}
+    n = 0
+    for f in sorted((S.pdir() / "outputs").glob("0[1-7]_*.md")):
+        body = strip_refs(f.read_text(encoding="utf-8"))
+        block = refs_block(body, claims, sources, decisions)
+        f.write_text(body + block, encoding="utf-8")
+        n += 1 if block else 0
+    print(f"Справка по меткам обновлена в {n} документах: каждый документ теперь читается без реестра.")
 
 
 # ================================================================ цепочка обоснования
@@ -605,6 +680,8 @@ def register(sub):
     p = pl.add_parser("drop"); p.add_argument("id"); p.add_argument("--reason", required=True); p.set_defaults(f=cmd_plan_drop)
     p = pl.add_parser("list"); p.set_defaults(f=cmd_plan_list)
 
+    p = sub.add_parser("annotate", help="добавить в итоговые документы расшифровку меток (что утверждается и откуда)")
+    p.set_defaults(f=cmd_annotate)
     p = sub.add_parser("why", help="цепочка обоснования: на чём держится вывод, рекомендация или решение")
     p.add_argument("ids", nargs="+"); p.set_defaults(f=cmd_why)
     p = sub.add_parser("verify", help="сверка цитат фактов со снимками источников (без LLM)"); p.set_defaults(f=cmd_verify)

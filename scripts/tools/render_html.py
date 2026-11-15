@@ -188,7 +188,10 @@ def build(slug: str) -> Path:
 
     body = []
     for p in sorted((d / "outputs").glob("[0-9][0-9]_*.md")):
-        body.append(md_to_html(p.read_text(encoding="utf-8"), ctx))
+        text = p.read_text(encoding="utf-8")
+        if "<!-- strateg:refs:start -->" in text:  # расшифровка меток в HTML есть в реестре и подсказках
+            text = text[:text.index("<!-- strateg:refs:start -->")]
+        body.append(md_to_html(text, ctx))
 
     # цепочки обоснования: рекомендация/решение → выводы → факты → источники
     sys.path.insert(0, str(ROOT / "scripts"))
