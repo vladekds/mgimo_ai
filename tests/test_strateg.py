@@ -321,6 +321,45 @@ class TestMcpAndTools(Base):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertIn("похожий на инструкцию", r.stdout)
 
+    def test_why_shows_chain_down_to_sources(self):
+        self.seed()
+        out = self.out("why", "R-001")
+        for part in ("R-001", "H-001", "F-001", "S-001", "отток вырос на 3,5 п.п."):
+            self.assertIn(part, out)
+
+    def test_check_requires_strategy_sections_and_grounded_promises(self):
+        d = self.seed()
+        (d / "outputs" / "05_comms_strategy.md").write_text(
+            "# Коммуникации\nБарьер: недоверие.\n| Обещание | Свойство | Статус |\n|---|---|---|\n| Без рекламы | — | нет |\n",
+            encoding="utf-8")
+        out = self.out("check")
+        self.assertIn("ключевое сообщение", out)
+        self.assertIn("без опоры в продукте", out)
+
+    def test_search_uses_domain_synonyms(self):
+        self.seed()
+        self.assertIn("F-001", self.out("search", "churn"))  # «отток» найден по синониму
+
+    def test_analyze_retention_decomposition_matches_reference(self):
+        csv = ROOT / "examples" / "orbita-kino" / "inputs" / "cohorts.csv"
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "tools" / "analyze.py"), "retention", str(csv),
+                            "--period", "cohort_month", "--segment", "channel", "--size", "new_subscribers", "--kept", "paying_day90"],
+                           capture_output=True, text=True, encoding="utf-8", env=self.env)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("-22.59", r.stdout)
+        self.assertIn("-2.38", r.stdout)
+        self.assertIn("2026-08, 2026-09", r.stdout)  # неполные периоды названы и исключены
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "tools" / "analyze.py"), "unit", "--price", "399", "--cost", "120",
+                            "--cac", "150", "--retention", "0.93,0.93,0.93,0.14", "--free-months", "3", "--promo-price", "1"],
+                           capture_output=True, text=True, encoding="utf-8", env=self.env)
+        self.assertIn("+19", r.stdout)
+
+    def test_ingest_subtitles_keeps_timecodes(self):
+        sys.path.insert(0, str(ROOT / "scripts" / "tools"))
+        import ingest
+        text = ingest.subtitles("1\n00:01:05,000 --> 00:01:09,000\nЯ не знал про списание\n\n2\n00:02:00,500 --> 00:02:03,000\nОтключил сразу\n")
+        self.assertIn("[00:01:05] Я не знал про списание", text)
+
     def test_bench_scanner_finds_planted_traps(self):
         doc = self.tmp / "answer.md"
         doc.write_text("Удержание упало из-за смены состава каналов: доля акции выросла.\n"

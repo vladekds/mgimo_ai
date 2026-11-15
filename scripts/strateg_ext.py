@@ -275,6 +275,35 @@ def extra_checks(claims, sources, errors, warns):
     if only_old:
         warns.append(f"факты {', '.join(only_old)} опираются только на источники старше 2 лет "
                      f"({', '.join(f'{k}: {v[:7]}' for k, v in old.items())}) — обнови или понизь уверенность")
+    required = {
+        "02_situation.md": [("пробелы: чего не знаем", r"не знаем|пробел")],
+        "04_product_strategy.md": [("аудитория и её задача", r"аудитори"), ("альтернативы пользователя", r"альтернатив"),
+                                   ("осознанные отказы", r"отказ|не делаем"), ("связь пользы с деньгами", r"экономик|выручк|доход|затрат")],
+        "05_comms_strategy.md": [("барьер понимания или выбора", r"барьер"), ("ключевое сообщение", r"ключев\w+ сообщени"),
+                                 ("подтверждения сообщения", r"подтвержд"), ("роль каналов", r"канал"),
+                                 ("сверка обещаний с продуктом", r"обещани")],
+        "06_validation_plan.md": [("ожидаемое изменение", r"ожидаем|метрик"), ("с чем сравниваем", r"сравн|контрольн"),
+                                  ("срок наблюдения", r"срок|недел|дн(ей|я)|месяц"),
+                                  ("нежелательные последствия", r"нежелательн|защитн\w+ метрик|побочн")],
+    }
+    out = S.pdir() / "outputs"
+    for name, rules in required.items():
+        f = out / name
+        if not f.exists():
+            continue
+        text = f.read_text(encoding="utf-8").lower()
+        for label, rx in rules:
+            if not re.search(rx, text):
+                warns.append(f"{name}: не найден обязательный раздел — {label}")
+        if name == "05_comms_strategy.md":
+            bad = [ln.strip() for ln in text.splitlines() if ln.strip().startswith("|") and re.search(r"\|\s*нет\s*\|?\s*$", ln.strip())]
+            if bad:
+                errors.append(f"{name}: {len(bad)} обещание(й) без опоры в продукте (статус «нет») — убрать из коммуникации или перенести в план")
+    done = [k for k, v in S.load_state()["stages"].items() if v == "done"]
+    if "strategy" in done:
+        for name in ("04_product_strategy.md", "05_comms_strategy.md", "06_validation_plan.md"):
+            if not (out / name).exists():
+                errors.append(f"этап «Стратегия» закрыт, но нет файла outputs/{name}")
     st = S.load_state()
     for stage, status in st["stages"].items():
         if status == "done" and stage in S.MODES[st.get("mode", "full")][1]:
@@ -391,6 +420,57 @@ def cmd_stats(a):
     print(f"Эскалаций исполнителя: {s['escalations']} | пересмотров: {s['revisions']} | контрольных точек: {s['checkpoints']}")
     if s["quote_check"]:
         print("Сверка цитат: " + ", ".join(f"{k} {v}" for k, v in s["quote_check"].items()))
+
+
+# ================================================================ цепочка обоснования
+def why_tree(rid: str, claims: dict, sources: dict, decisions: dict, seen=None, depth=0) -> list:
+    """Дерево «на чём держится»: решение → рекомендации → выводы → факты → источники с цитатами."""
+    seen = seen if seen is not None else set()
+    node = {"id": rid, "children": [], "repeat": rid in seen}
+    if rid in decisions:
+        d = decisions[rid]
+        node.update(kind="решение", text=f"{d['title']}: {d['chosen_option']}", status=d["status"], confidence="")
+        kids = d["based_on"]
+    elif rid in claims:
+        c = claims[rid]
+        node.update(kind=S.TYPE_RU[c["type"]], text=c["text"], status=c["status"], confidence=c["confidence"],
+                    evidence=c.get("evidence"), quote=(c.get("quote_check") or {}).get("status"))
+        kids = c["depends_on"]
+        for sid in c["sources"]:
+            s = sources.get(sid)
+            if s:
+                node["children"].append({"id": sid, "kind": f"источник, надёжность {s['reliability']}", "text": s["title"],
+                                         "status": "", "confidence": "", "children": [], "repeat": False,
+                                         "where": s.get("url") or s.get("path") or ""})
+    else:
+        node.update(kind="?", text="нет в реестре", status="missing", confidence="")
+        return [node]
+    if not node["repeat"] and depth < 8:
+        seen.add(rid)
+        for k in kids:
+            node["children"] += why_tree(k, claims, sources, decisions, seen, depth + 1)
+    return [node]
+
+
+def cmd_why(a):
+    claims = {c["id"]: c for c in S.load_claims()}
+    sources = {s["id"]: s for s in S.read_jsonl(S.pdir() / "sources.jsonl")}
+    decisions = {d["id"]: d for d in S.read_jsonl(S.pdir() / "decisions.jsonl")}
+    marks = {"ok": " ✓цитата", "computed": " ✓расчёт", "close": " ~цитата", "missing": " ✗цитата"}
+
+    def show(nodes, indent=0):
+        for n in nodes:
+            flag = "" if n["status"] in ("", "active", "confirmed") else f" [{n['status']}]"
+            conf = f", {n['confidence']}" if n.get("confidence") else ""
+            print("  " * indent + f"{'└─ ' if indent else ''}{n['id']} ({n['kind']}{conf}){flag}{marks.get(n.get('quote'), '')} {n['text'][:150]}"
+                  + (" (см. выше)" if n["repeat"] else ""))
+            if n.get("evidence") and not n["repeat"]:
+                print("  " * (indent + 1) + f"   «{n['evidence'][:140]}»")
+            show(n["children"], indent + 1)
+
+    for rid in S.split_ids(a.ids):
+        show(why_tree(rid, claims, sources, decisions))
+        print()
 
 
 # ================================================================ передача в другую среду
@@ -525,6 +605,8 @@ def register(sub):
     p = pl.add_parser("drop"); p.add_argument("id"); p.add_argument("--reason", required=True); p.set_defaults(f=cmd_plan_drop)
     p = pl.add_parser("list"); p.set_defaults(f=cmd_plan_list)
 
+    p = sub.add_parser("why", help="цепочка обоснования: на чём держится вывод, рекомендация или решение")
+    p.add_argument("ids", nargs="+"); p.set_defaults(f=cmd_why)
     p = sub.add_parser("verify", help="сверка цитат фактов со снимками источников (без LLM)"); p.set_defaults(f=cmd_verify)
     p = sub.add_parser("route", help="какой исполнитель/модель для задачи"); p.add_argument("task", nargs="*")
     p.add_argument("--list", action="store_true"); p.set_defaults(f=cmd_route)

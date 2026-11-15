@@ -933,6 +933,14 @@ def search_items(query: str, slug: str | None = None, limit: int = 15) -> list[d
         items.append({"id": x["id"], "kind": "решение", "status": x["status"], "text": f"{x['title']}: {x['chosen_option']}",
                       "extra": " ".join(x.get("metrics", []) + x.get("review_if", [])), "links": x["based_on"]})
     q = set(stems(query))
+    try:  # расширение запроса синонимами предметной области (knowledge/synonyms.json)
+        groups = json.loads((ROOT / "knowledge" / "synonyms.json").read_text(encoding="utf-8"))["groups"]
+        for g in groups:
+            gs = {w for term in g for w in stems(term)}
+            if q & gs:
+                q |= gs
+    except (OSError, ValueError, KeyError):
+        pass
     direct = [w for w in ID_RE.findall(query.upper())]
     scored = []
     for it in items:
@@ -1050,7 +1058,13 @@ def main(argv=None):
     strateg_ext.register(sub)
 
     a = ap.parse_args(argv)
-    a.f(a)
+    try:
+        a.f(a)
+    except BrokenPipeError:  # вывод оборван получателем (например, | head) — это не ошибка
+        try:
+            sys.stdout.close()
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

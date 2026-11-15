@@ -100,6 +100,8 @@ TOOLS = {
                     lambda p: run_cli(["claim", "list"] + (["--type", p["type"]] if p.get("type") else [])
                                       + (["--status", p["status"]] if p.get("status") else []))),
     "list_sources": ("Список источников с оценкой надёжности A–E.", {}, lambda p: run_cli(["source", "list"])),
+    "why": ("Цепочка обоснования: на чём держится вывод, рекомендация или решение — до фактов, цитат и источников.",
+            {"ids": {"type": "array", "items": {"type": "string"}}}, lambda p: run_cli(["why", *p["ids"]]), ["ids"]),
     "impact": ("Что зависит от утверждения или источника (выводы, рекомендации, решения).",
                {"ids": {"type": "array", "items": {"type": "string"}}}, lambda p: run_cli(["impact", *p["ids"]]), ["ids"]),
     "decisions_due": ("Какие решения пора пересмотреть: срок наступил или основания ослабли.",

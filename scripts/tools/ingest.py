@@ -111,6 +111,21 @@ def html_to_text(raw: str) -> str:
     return re.sub(r"\n\s*\n+", "\n\n", re.sub(r"[ \t]+", " ", text)).strip()
 
 
+def subtitles(raw: str) -> str:
+    """Расшифровка аудио/видео (SRT, VTT) → строки «[чч:мм:сс] текст». Таймкод годится как место в --evidence."""
+    out, stamp = [], None
+    for line in raw.replace("\r", "").split("\n"):
+        line = line.strip()
+        m = re.match(r"(\d{1,2}:)?(\d{2}):(\d{2})[.,]\d{3}\s*-->", line)
+        if m:
+            stamp = f"{(m.group(1) or '00:').rstrip(':').zfill(2)}:{m.group(2)}:{m.group(3)}"
+        elif line and not line.isdigit() and line != "WEBVTT" and not line.startswith(("NOTE", "Kind:", "Language:")):
+            text = re.sub(r"<[^>]+>", "", line)
+            out.append(f"[{stamp}] {text}" if stamp else text)
+            stamp = None
+    return "\n".join(out)
+
+
 def pdf(path: Path) -> str:
     try:
         from pypdf import PdfReader  # type: ignore
@@ -143,6 +158,8 @@ def convert(path: Path) -> str:
         with path.open(encoding="utf-8-sig", errors="ignore") as f:
             rows = list(csv.reader(f, delimiter="\t" if ext == ".tsv" else ","))
         return "\n".join("| " + " | ".join(r) + " |" for r in rows[:500])
+    if ext in (".srt", ".vtt"):
+        return subtitles(path.read_text(encoding="utf-8-sig", errors="ignore"))
     if ext in (".txt", ".md", ".json"):
         return path.read_text(encoding="utf-8", errors="ignore")
     sys.exit(f"Формат {ext} не поддерживается. Установите markitdown или пришлите PDF/DOCX/XLSX/CSV/TXT.")

@@ -160,6 +160,8 @@ a{color:var(--con)}.cid{font:600 12px/1 ui-monospace,Consolas,monospace;padding:
 #tip{position:fixed;max-width:min(420px,calc(100vw - 16px));background:var(--fg);color:var(--bg);font-size:12.5px;line-height:1.45;padding:8px 10px;border-radius:8px;white-space:pre-line;pointer-events:none;display:none;z-index:9}
 .legend{display:flex;flex-wrap:wrap;gap:8px;font-size:12px;margin:8px 0}.filters button{font:inherit;font-size:12px;margin:2px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
 .filters button.on{background:var(--fg);color:var(--bg)}tr:target{outline:2px solid var(--acc)}
+ul.why{list-style:none;padding-left:18px;border-left:2px solid var(--line);margin:6px 0}ul.why li{margin:7px 0}
+details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0}summary{cursor:pointer}
 @media (max-width:860px){.wrap{display:block}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:20px 16px}}
 @media print{nav,.filters{display:none}.wrap{display:block}}
 """
@@ -187,6 +189,37 @@ def build(slug: str) -> Path:
     body = []
     for p in sorted((d / "outputs").glob("[0-9][0-9]_*.md")):
         body.append(md_to_html(p.read_text(encoding="utf-8"), ctx))
+
+    # цепочки обоснования: рекомендация/решение → выводы → факты → источники
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import strateg_ext
+    cmap, smap, dmap = ctx.claims, ctx.sources, ctx.decisions
+
+    def tree_html(nodes):
+        out = "<ul class=why>"
+        for n in nodes:
+            p, num = n["id"].split("-")
+            ev = f'<div class=meta>«{html.escape(n["evidence"][:200])}»</div>' if n.get("evidence") and not n["repeat"] else ""
+            where = n.get("where") or ""
+            link = (f' <a href="{html.escape(where)}" target="_blank" rel="noopener">открыть</a>' if where.startswith("http")
+                    else (f' <span class=meta>{html.escape(where)}</span>' if where else ""))
+            qc = {"ok": " ✓ цитата найдена", "computed": " ✓ числа сверены с расчётом", "close": " ~ близко к тексту",
+                  "missing": " ✗ цитата не найдена"}.get(n.get("quote"), "")
+            conf = f', уверенность {n["confidence"]}' if n.get("confidence") else ""
+            out += (f'<li>{ctx.ref(p, num)} <span class=meta>{html.escape(n["kind"])}{conf}{qc}</span> '
+                    f'{html.escape(n["text"][:260])}{" <span class=meta>(см. выше)</span>" if n["repeat"] else ""}{link}{ev}')
+            if n["children"]:
+                out += tree_html(n["children"])
+            out += "</li>"
+        return out + "</ul>"
+
+    roots = [x["id"] for x in decisions] + [c["id"] for c in claims if c["type"] == "recommendation"
+                                            and c["status"] not in ("retracted", "superseded")]
+    if roots:
+        blocks = "".join(f'<details{" open" if i == 0 else ""}><summary><b>{rid}</b> — почему так</summary>'
+                         f'{tree_html(strateg_ext.why_tree(rid, cmap, smap, dmap))}</details>' for i, rid in enumerate(roots))
+        body.append(f'<h2{ctx.anchor("Почему такой вывод")}>Почему такой вывод</h2><p class=meta>Каждая рекомендация и решение '
+                    "раскрываются до выводов, фактов и источников с цитатами. Так видно, на чём держится результат и что в нём предположение.</p>" + blocks)
 
     # реестр
     rows = []

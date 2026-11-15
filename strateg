@@ -11,6 +11,7 @@ case "$1" in
   py)      shift; exec bash "$DIR/.claude/hooks/py.sh" "$@" ;;
   html)    shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/render_html.py" "$@" ;;
   bench)   shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/bench.py" "$@" ;;
+  analyze) shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/analyze.py" "$@" ;;
   profile) shift; exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/tools/profile_table.py" "$@" ;;
   *)       exec bash "$DIR/.claude/hooks/py.sh" "$DIR/scripts/strateg.py" "$@" ;;
 esac
